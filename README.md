@@ -1,2 +1,8 @@
 # Projektna-naloga
-Projektna naloga za predmet Uvod v programiranje (smer Finančna matematika)
+AVTORICA: Špela Hriberšek
+
+## Uvod
+
+## Navodila za uporabo
+
+## Opis datotek
