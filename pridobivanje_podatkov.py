@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 from tqdm import tqdm
 import time
+from shrani import shrani_nobelovce
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36"
@@ -66,10 +67,11 @@ def pridobi_podrobnejše_podatke(url):
         infobox = soup.find('table', {'class': 'infobox'})
 
         if not infobox:
-            return {'narodnost': None, 'rojstvo': None, 'nagrade': None}
+            return {'poklic': None, 'rojstvo': None, 'kraj_rojstva': None, 'nagrade': None}
 
-        narodnost = None
+        poklic = None
         rojstvo = None
+        kraj_rojstva = None
         nagrade = []
 
         for vrstica in infobox.find_all('tr'):
@@ -81,141 +83,60 @@ def pridobi_podrobnejše_podatke(url):
 
             label = naslov.text.strip().lower()
 
+            # datum in kraj rojstva
             if 'born' in label:
-                rojstvo = podatki.text.strip().replace('\n', ' ')
-            elif 'nationality' in label:
-                narodnost = podatki.text.strip().replace('\n', ' ')
+                bday = podatki.find('span', {'class': 'bday'})
+                if bday:
+
+                    rojstvo = bday.text.strip()
+
+                    full_text = podatki.text.strip()
+
+                    kraj_rojstva = full_text.replace(rojstvo, '').strip('() ,\n')
+
+                else:
+
+                    parts = podatki.text.strip().split('(')
+                    rojstvo = parts[0].strip()
+                    if len(parts) > 1:
+                        kraj_rojstva = parts[1].strip(') ')
+
+            # Poklic
+            if 'occupation' in label:
+                poklic = podatki.text.strip().replace('\n', ' ')
+
+            # nagrade
             elif 'awards' in label:
                 nagrade = [el.text.strip() for el in podatki.find_all(['a', 'li']) if el.text.strip()]
                 if not nagrade:
                     nagrade = [podatki.text.strip().replace('\n', ' ')]
 
         return {
-            'narodnost': narodnost,
+            'poklic': poklic,
             'rojstvo': rojstvo,
+            'kraj_rojstva': kraj_rojstva,
             'nagrade': ', '.join(nagrade) if nagrade else None
         }
 
     except Exception as e:
-        return {'narodnost': None, 'rojstvo': None, 'nagrade': None}
+        return {'poklic': None, 'rojstvo': None, 'kraj_rojstva': None, 'nagrade': None}
 
 
-
-# Pridobivanje dodatnih podatkov z napredkom
+ 
 podatki_oseb = []
 for url in tqdm(osnovni_podatki['URL'], desc="Pridobivanje podatkov z Wikipedije"):
     oseba = pridobi_podrobnejše_podatke(url)
     podatki_oseb.append(oseba)
-    time.sleep(1)  # Ne obremenjuj Wikipedije prehitro
+    time.sleep(1)  
 
-# Združi s tabelo
 dodatni_df = pd.DataFrame(podatki_oseb)
 obogateno = pd.concat([osnovni_podatki.reset_index(drop=True), dodatni_df], axis=1)
 
 
-print(obogateno.head(10))
+
+shrani_nobelovce(obogateno)
 
 
-
-
-# def pridobi_link_nagrajenca(url):
-#     try:
-#         response = requests.get(url)
-#         response.raise_for_status()
-#         soup = BeautifulSoup(response.text, 'html.parser')
-
-#         infobox = soup.find('table', {'class': 'infobox biography vcard'})
-
-#         if not infobox:
-#             return {'narodnost': None, 'rojstvo': None, 'nagrade': None}
-
-#         vrstice = infobox.find_all('tr')
-
-#         narodnost = None
-#         rojstvo = None
-#         nagrade = []
-
-#         for vrstica in vrstice:
-#             header = vrstica.find('th')
-#             if not header:
-#                 continue
-#             label = header.text.strip().lower()
-
-#             if 'born' in label:
-#                 rojstvo = vrstica.find('td').text.strip()
-#             elif 'nationality' in label:
-#                 narodnost = vrstica.find('td').text.strip()
-#             elif 'awards' in label:
-#                 nagrade_td = vrstica.find('td')
-#                 if nagrade_td:
-#                     nagrade = [el.text.strip() for el in nagrade_td.find_all(['a', 'li']) if el.text.strip()]
-#                     if not nagrade:  # fallback
-#                         nagrade = [nagrade_td.text.strip()]
-
-#         return {
-#             'narodnost': narodnost,
-#             'rojstvo': rojstvo,
-#             'nagrade': ', '.join(nagrade) if nagrade else None
-#         }
-
-#     except Exception as e:
-#         return {'narodnost': None, 'rojstvo': None, 'nagrade': None}
-    
-# def pridobi_podatke(url):
-#     try:
-#         response = requests.get(url, timeout=10)
-#         response.raise_for_status()
-#         soup = BeautifulSoup(response.text, 'html.parser')
-
-#         infobox = soup.find('table', {'class': 'infobox'})
-#         if not infobox:
-#             return {'narodnost': None, 'rojstvo': None, 'nagrade': None}
-
-#         narodnost = None
-#         rojstvo = None
-#         nagrade = []
-
-#         for vrstica in infobox.find_all('tr'):
-#             naslov = vrstica.find('th')
-#             podatki = vrstica.find('td')
-
-#             if not naslov or not podatki:
-#                 continue
-
-#             label = naslov.text.strip().lower()
-
-#             if 'born' in label:
-#                 rojstvo = podatki.text.strip().replace('\n', ' ')
-#             elif 'nationality' in label:
-#                 narodnost = podatki.text.strip().replace('\n', ' ')
-#             elif 'awards' in label:
-#                 # Poskusi dobiti vse povezave ali besedilo
-#                 nagrade = [el.text.strip() for el in podatki.find_all(['a', 'li']) if el.text.strip()]
-#                 if not nagrade:
-#                     nagrade = [podatki.text.strip().replace('\n', ' ')]
-
-#         return {
-#             'narodnost': narodnost,
-#             'rojstvo': rojstvo,
-#             'nagrade': ', '.join(nagrade) if nagrade else None
-#         }
-
-#     except Exception as e:
-#         return {'narodnost': None, 'rojstvo': None, 'nagrade': None}
-
-# # Dodaj stolpce z napredkom
-# dodatki = []
-# for url in tqdm(osnovni_podatki['URL'], desc="Pridobivanje podatkov z Wikipedije"):
-#     podatki = pridobi_podatke(url)
-#     dodatki.append(podatki)
-#     time.sleep(1)  # da ne preobremeniš Wikipedije
-
-# # Združi vse
-# dodatni_df = pd.DataFrame(dodatki)
-# obogateno = pd.concat([osnovni_podatki.reset_index(drop=True), dodatni_df], axis=1)
-
-# # Preglej rezultate
-# print(obogateno.head())
 
 
 
