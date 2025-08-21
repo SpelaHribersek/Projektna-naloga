@@ -1,5 +1,4 @@
 from pridobivanje_podatkov import pridobi_podatke
-from preimenovanje import preimenuj
 from pocisti_podatke import pocisti
 
 dataframe = pridobi_podatke()

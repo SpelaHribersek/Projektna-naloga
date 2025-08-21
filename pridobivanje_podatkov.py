@@ -103,7 +103,7 @@ def pridobi_podatke():
         except Exception:
             return {'rojstvo': None, 'kraj_rojstva': None, 'nagrade': None}
 
-    # Pridobivanje podrobnih podatkov za vse nagrajence
+
     podatki_oseb = []
     for url in tqdm(osnovni_podatki['URL'], desc="Pridobivanje podatkov z Wikipedije"):
         oseba = pridobi_podrobnejše_podatke(url)
