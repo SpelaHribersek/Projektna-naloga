@@ -1,8 +1,5 @@
-import csv
-import pandas as pd
-
-def shrani_nobelovce(obogateno_df):
-    obogateno_df.rename(columns={
+def preimenuj(df):
+    df.rename(columns={
         "LETO": "leto",
         "PODROČJE": "podrocje",
         "NOBELOV NAGRAJENEC": "ime",
@@ -12,4 +9,4 @@ def shrani_nobelovce(obogateno_df):
         "nagrade": "nagrade"
     }, inplace=True)
     
-    obogateno_df.to_csv("nagrajenci.csv", index=False, encoding="utf-8")
+    return df
